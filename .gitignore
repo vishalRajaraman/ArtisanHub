@@ -1,0 +1,18 @@
+ # Environment Variables (Crucial for security)
+.env
+
+# Python temporary files
+__pycache__/
+*.pyc
+
+# Virtual Environments
+venv/
+env/
+
+# Mobile App folders
+.expo/
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
