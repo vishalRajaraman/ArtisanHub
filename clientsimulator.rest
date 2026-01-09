@@ -1,0 +1,16 @@
+###Endpoint to check otp login
+POST http://localhost:619/auth/send-otp
+Content-Type: application/json
+
+{
+    "phone_number": "+919442027935"
+}
+###Endpoint to authenticate the otp from the artist
+POST http://localhost:619/auth/verify-otp
+Content-Type: application/json
+
+{
+    "phone_number": "+919442027935",
+    "otp": "6946",
+    "full_name": "Vishal Artisan"
+}
