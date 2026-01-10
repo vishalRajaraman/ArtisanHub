@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File, Form, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse, HTMLResponse  # <--- Added HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from twilio.rest import Client as TwilioClient
 from instagrapi import Client as InstaClient
@@ -15,8 +16,6 @@ import base64
 import io
 import time
 import requests 
-from fastapi.staticfiles import StaticFiles 
-from fastapi.responses import FileResponse
 
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
@@ -160,8 +159,8 @@ class ArtworkProfileResponse(BaseModel):
     art_form_tag: str | None
     app_title: str | None
     corrected_voice: str | None
-    min_price: int | None  # <--- Added
-    max_price: int | None  # <--- Added
+    min_price: int | None
+    max_price: int | None
     is_published: bool
     image_base64: str | None
 
@@ -187,6 +186,36 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/")
 def read_root():
     return FileResponse('static/index.html')
+
+# --- NEW AR ENDPOINT ---
+@app.get("/ar/view/{art_id}", response_class=HTMLResponse)
+def view_in_ar(art_id: int, db: Session = Depends(get_db)):
+    """
+    Generates the AR view for a specific artwork.
+    """
+    # 1. Fetch artwork
+    art = db.query(ArtformTable).filter(ArtformTable.id == art_id).first()
+    if not art:
+        raise HTTPException(status_code=404, detail="Artwork not found")
+    
+    # 2. Get Image Data
+    if not art.image_data:
+        raise HTTPException(status_code=404, detail="Image data missing")
+        
+    image_b64 = base64.b64encode(art.image_data).decode('utf-8')
+    image_src = f"data:image/jpeg;base64,{image_b64}"
+    
+    # 3. Inject into Template
+    try:
+        with open("static/ar_view.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+    except FileNotFoundError:
+        return HTMLResponse("<h1>Error: static/ar_view.html not found</h1>", status_code=500)
+    
+    html_content = html_content.replace("{{IMAGE_SOURCE}}", image_src)
+    
+    return HTMLResponse(content=html_content)
+
 @app.post("/utils/transcribe")
 async def transcribe_audio(voice_file: UploadFile = File(...)):
     audio_bytes = await voice_file.read()
@@ -200,11 +229,8 @@ async def transcribe_audio(voice_file: UploadFile = File(...)):
 def send_otp(request: LoginRequest):
     otp = str(random.randint(1000, 9999))
     otp_storage[request.phone_number] = otp
-    
-    print(f"🔐 DEBUG OTP: {otp}")  # <--- Always works (Check terminal!)
-
+    print(f"🔐 DEBUG OTP: {otp}") 
     try:
-        # Attempt to send SMS
         twilio_client.messages.create(
             body=f"Your ArtConnect Login Code: {otp}",
             from_=TWILIO_PHONE,
@@ -212,9 +238,7 @@ def send_otp(request: LoginRequest):
         )
         print("✅ Twilio SMS sent successfully")
     except Exception as e:
-        # PRINT THE ERROR so you can see it
         print(f"❌ Twilio Failed: {str(e)}")
-    
     return {"message": "OTP Sent (Check Terminal if SMS failed)"}
 
 @app.post("/auth/verify-otp")
@@ -260,7 +284,6 @@ async def analyze_art_draft(
     processed_bytes = enhance_image_quality(original_bytes)
     base64_img = base64.b64encode(processed_bytes).decode('utf-8')
 
-    # 2. Gemini Analysis (USING THE FULL PROMPT)
     prompt = f"""
 Role: You are a strict, conservative Art Appraiser and a Professional Social Media Editor. 
 Task: Analyze the uploaded image and the user's description: '{user_voice}'.
@@ -315,8 +338,8 @@ Return ONLY a valid JSON object with this exact structure:
         art_form_tag=analysis['art_tag'], 
         app_title=analysis['app_title'],
         corrected_voice=analysis['corrected_voice'], 
-        min_price=analysis['price_min'], # <--- SAVING MIN PRICE
-        max_price=analysis['price_max'], # <--- SAVING MAX PRICE
+        min_price=analysis['price_min'], 
+        max_price=analysis['price_max'], 
         is_published=False 
     )
     db.add(new_art)
@@ -356,7 +379,6 @@ async def publish_art(
 
     return {"status": "published"}
 
-# --- DELETE ENDPOINT ---
 @app.delete("/art/{art_id}")
 def delete_art(art_id: int, current_user: UserTable = Depends(get_current_user), db: Session = Depends(get_db)):
     art = db.query(ArtformTable).filter(ArtformTable.id == art_id).first()
@@ -372,7 +394,6 @@ def delete_art(art_id: int, current_user: UserTable = Depends(get_current_user),
     db.commit()
     return {"status": "deleted", "message": "Artwork removed from database and search index"}
 
-# --- VIEWING ---
 @app.get("/user/profile/artworks", response_model=List[ArtworkProfileResponse])
 def get_my_artworks(current_user: UserTable = Depends(get_current_user), db: Session = Depends(get_db)):
     artworks = db.query(ArtformTable).filter(ArtformTable.owner_phone == current_user.phone).all()
@@ -382,8 +403,8 @@ def get_my_artworks(current_user: UserTable = Depends(get_current_user), db: Ses
         res.append(ArtworkProfileResponse(
             id=art.id, title=art.title, price=art.price, description=art.description,
             art_form_tag=art.art_form_tag, app_title=art.app_title, corrected_voice=art.corrected_voice,
-            min_price=art.min_price, # <--- RETURNING MIN PRICE
-            max_price=art.max_price, # <--- RETURNING MAX PRICE
+            min_price=art.min_price, 
+            max_price=art.max_price, 
             is_published=art.is_published, image_base64=img
         ))
     return res
