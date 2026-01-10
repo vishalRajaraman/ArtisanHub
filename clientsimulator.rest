@@ -11,6 +11,6 @@ Content-Type: application/json
 
 {
     "phone_number": "+919442027935",
-    "otp": "5209",
+    "otp": "4692",
     "full_name": "Vishal Artisan"
 }
