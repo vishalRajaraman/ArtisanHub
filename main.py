@@ -254,8 +254,47 @@ async def analyze_art_draft(user_voice: str = Form(...), file: UploadFile = File
     original_bytes = await file.read()
     processed_bytes = enhance_image_quality(original_bytes)
     base64_img = base64.b64encode(processed_bytes).decode('utf-8')
-    prompt = f"""Role: Art Appraiser. Task: Analyze image & desc: '{user_voice}'.
-    OUTPUT JSON: {{ "price_min": 1000, "price_max": 1300, "currency": "INR", "reasoning": "...", "instagram_caption": "...", "art_tag": "...", "app_title": "...", "corrected_voice": "..." }}"""
+    # Use this prompt inside the analyze_art_draft function in main.py
+    prompt = f"""
+Role: You are a strict, conservative Art Appraiser and a Professional Social Media Editor. 
+Task: Analyze the uploaded image and the user's description: '{user_voice}'.
+
+--- PART 1: VALUATION RULES ---
+1. CLASSIFY: Determine the 'Artist Level' based strictly on visual technical skill:
+   - Beginner/Hobbyist: Simple techniques, standard materials. (Price Tier: Low)
+   - Emerging Artist: Consistent style, good composition. (Price Tier: Medium)
+   - Professional: Gallery-quality, exceptional technique. (Price Tier: High)
+
+2. PRICE: Estimate a realistic sellable price in INDIAN RUPEES (₹).
+   - Compare with unverified artwork on Etsy/ArtStation.
+   - DO NOT assume the artist is famous. Be conservative.
+   - The gap between Min and Max price must NOT exceed 30% of the Min price.
+
+--- PART 2: CONTENT GENERATION RULES ---
+1. ART TAG: Be precise and descriptive (e.g., "Oil on Canvas", "Digital Vector Art"). Avoid abstract terms.
+2. APP TITLE: Write one emotional, captivating sentence about the art.
+3. INSTAGRAM CAPTION: Create a catchy, trendy caption with hashtags.
+
+--- PART 3: VOICE CORRECTION RULES ---
+Refine the user's description ('{user_voice}') for the 'corrected_voice' field:
+   - Preserve Core Meaning: Do not change the artist's intent.
+   - Fix Grammar: Correct errors and awkward phrasing.
+   - Polish Tone: Make it professional but authentic.
+   - Maintain Voice: If they sound humble, keep it humble. If excited, keep it excited. DO NOT use corporate marketing speak.
+
+--- OUTPUT FORMAT ---
+Return ONLY a valid JSON object with this exact structure:
+{{
+  "price_min": 1000,
+  "price_max": 1300,
+  "currency": "INR",
+  "reasoning": "Brief explanation of valuation based on skill level.",
+  "instagram_caption": "Your caption here...",
+  "art_tag": "Precise Art Form",
+  "app_title": "Emotional sentence about the art...",
+  "corrected_voice": "The refined version of the user's text..."
+}}
+"""
     try:
         res = model.generate_content([prompt, {'mime_type': 'image/jpeg', 'data': original_bytes}])
         analysis = json.loads(res.text.replace("```json", "").replace("```", "").strip())
