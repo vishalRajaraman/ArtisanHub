@@ -31,11 +31,15 @@
     </div>
 
     <nav class="sticky top-0 z-50 glass border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-        <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent cursor-pointer" onclick="showSection('landing')">ArtConnect</h1>
+        <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent cursor-pointer" onclick="showSection('landing')">
+            ArtConnect
+        </h1>
         <div id="nav-user" class="hidden space-x-6 items-center">
             <button onclick="showSection('gallery')" class="hover:text-indigo-600 font-medium">My Gallery</button>
             <button onclick="showSection('discover')" class="hover:text-indigo-600 font-medium">Discover</button>
-            <button onclick="showSection('upload')" class="bg-indigo-600 text-white px-5 py-2 rounded-full text-sm hover:bg-indigo-700 transition shadow-md">+ New Creation</button>
+            <button onclick="showSection('upload')" class="bg-indigo-600 text-white px-5 py-2 rounded-full text-sm hover:bg-indigo-700 transition shadow-md">
+                + New Creation
+            </button>
             <button onclick="logout()" class="text-slate-400 hover:text-red-500 ml-4"><i class="fa-solid fa-power-off"></i></button>
         </div>
         <div id="nav-auth">
@@ -44,6 +48,7 @@
     </nav>
 
     <main class="max-w-6xl mx-auto p-6">
+        
         <section id="section-auth" class="max-w-md mx-auto mt-20 p-8 glass rounded-3xl shadow-2xl border border-slate-100 fade-in">
             <h2 class="text-3xl font-bold mb-2">Artisan Access</h2>
             <div id="otp-step-1">
@@ -69,36 +74,59 @@
             <div class="grid lg:grid-cols-2 gap-12 mt-10">
                 <div class="space-y-6">
                     <h2 class="text-4xl font-bold">Upload & <span class="text-indigo-600">Analyze</span></h2>
+                    
                     <div class="space-y-4">
                         <div class="relative">
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Artist's Voice</label>
-                            <textarea id="user_voice" rows="4" placeholder="Describe your art..." class="w-full p-4 rounded-2xl border border-slate-200 outline-none"></textarea>
+                            <textarea id="user_voice" rows="4" placeholder="Describe your art (Type or use Voice)..." class="w-full p-4 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
                             <div class="flex items-center gap-3 mt-2">
-                                <button id="btn-record" onclick="toggleRecording()" class="flex items-center gap-2 bg-indigo-50 text-indigo-600 px-4 py-2 rounded-full font-bold border border-indigo-200 hover:bg-indigo-100 transition"><i class="fa-solid fa-microphone"></i> <span>Record Voice</span></button>
+                                <button id="btn-record" onclick="toggleRecording()" class="flex items-center gap-2 bg-indigo-50 text-indigo-600 px-4 py-2 rounded-full font-bold border border-indigo-200 hover:bg-indigo-100 transition">
+                                    <i class="fa-solid fa-microphone"></i> <span>Record Voice</span>
+                                </button>
                                 <span id="record-status" class="text-xs text-slate-400">Powered by Sarvam AI</span>
                             </div>
                         </div>
+
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Artwork Source</label>
                             <div class="grid grid-cols-2 gap-4">
-                                <div onclick="document.getElementById('art_file').click()" class="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-slate-50 transition"><i class="fa-regular fa-images text-3xl text-slate-400 mb-2"></i><span class="text-sm font-bold text-slate-500">Gallery</span></div>
-                                <div onclick="openCamera()" class="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-slate-50 transition"><i class="fa-solid fa-camera text-3xl text-slate-400 mb-2"></i><span class="text-sm font-bold text-slate-500">Camera</span></div>
+                                <div onclick="document.getElementById('art_file').click()" class="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-slate-50 transition group">
+                                    <i class="fa-regular fa-images text-3xl text-slate-400 group-hover:text-indigo-500 mb-2"></i>
+                                    <span class="text-sm font-bold text-slate-500">Gallery</span>
+                                </div>
+
+                                <div onclick="openCamera()" class="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-slate-50 transition group">
+                                    <i class="fa-solid fa-camera text-3xl text-slate-400 group-hover:text-purple-500 mb-2"></i>
+                                    <span class="text-sm font-bold text-slate-500">Camera</span>
+                                </div>
                             </div>
+
                             <input type="file" id="art_file" class="hidden" accept="image/*" onchange="handleFileSelection(this)">
+                            
                             <div id="selection-status" class="hidden mt-4 bg-white p-3 rounded-xl border border-indigo-100 flex items-center gap-4 shadow-sm">
                                 <img id="preview-thumb" class="w-12 h-12 object-cover rounded-lg" src="">
-                                <div><p class="text-sm font-bold text-indigo-900">Captured!</p><p class="text-xs text-slate-500">Ready</p></div>
+                                <div>
+                                    <p class="text-sm font-bold text-indigo-900">Image Captured!</p>
+                                    <p class="text-xs text-slate-500">Ready for AI Appraisal</p>
+                                </div>
                             </div>
                         </div>
-                        <button id="btn-analyze" onclick="analyzeArt()" class="w-full bg-slate-900 text-white p-5 rounded-2xl font-bold hover:bg-black transition opacity-50 cursor-not-allowed" disabled>Run AI Appraisal</button>
+                        
+                        <button id="btn-analyze" onclick="analyzeArt()" class="w-full bg-slate-900 text-white p-5 rounded-2xl font-bold hover:bg-black transition opacity-50 cursor-not-allowed" disabled>
+                            Run AI Appraisal
+                        </button>
                     </div>
                 </div>
+
                 <div id="ai-preview-container" class="hidden space-y-6 p-8 bg-white rounded-3xl border border-indigo-100 shadow-xl">
                     <img id="sharpened-preview" class="w-full h-64 object-cover rounded-2xl shadow-md" src="">
                     <div class="space-y-4">
                         <h3 id="ai-title" class="text-2xl font-bold"></h3>
                         <p id="ai-voice" class="text-slate-600 italic"></p>
-                        <div class="bg-indigo-50 p-4 rounded-xl"><p class="text-xs font-bold text-indigo-400 uppercase">Suggested Price</p><p class="text-2xl font-black text-indigo-700">₹<span id="rec-min"></span> - ₹<span id="rec-max"></span></p></div>
+                        <div class="bg-indigo-50 p-4 rounded-xl">
+                            <p class="text-xs font-bold text-indigo-400 uppercase">Suggested Market Price</p>
+                            <p class="text-2xl font-black text-indigo-700">₹<span id="rec-min"></span> - ₹<span id="rec-max"></span></p>
+                        </div>
                         <input type="number" id="final_price" placeholder="Enter Final Price" class="w-full p-4 rounded-xl border-2 border-indigo-600 font-bold">
                         <button onclick="publishArt()" class="w-full bg-green-500 text-white p-4 rounded-xl font-bold hover:bg-green-600 shadow-lg">Confirm & Publish</button>
                     </div>
@@ -107,13 +135,18 @@
         </section>
 
         <section id="section-gallery" class="hidden fade-in">
-            <div class="mb-8"><h2 class="text-4xl font-bold">Studio</h2></div>
+            <div class="mb-8">
+                <h2 class="text-4xl font-bold">
+                    Studio of <span id="artist-name-display" class="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Artisan</span>
+                </h2>
+                <p class="text-slate-500 mt-2">Manage your collection.</p>
+            </div>
             <div id="gallery-grid" class="grid md:grid-cols-3 gap-8"></div>
         </section>
 
         <section id="section-discover" class="hidden fade-in">
             <div class="mb-12 text-center">
-                <h2 class="text-4xl font-bold mb-4">Discovery</h2>
+                <h2 class="text-4xl font-bold mb-4">Semantic Discovery</h2>
                 <div class="max-w-2xl mx-auto flex gap-2">
                     <input type="text" id="search-query" placeholder="e.g. 'Calm landscape'" class="flex-1 p-4 rounded-2xl border outline-none">
                     <button onclick="searchArt()" class="bg-purple-600 text-white px-8 rounded-2xl font-bold">Search</button>
@@ -121,12 +154,42 @@
             </div>
             <div id="discover-grid" class="grid md:grid-cols-3 gap-8"></div>
         </section>
+
+        <section id="section-checkout" class="hidden fade-in max-w-lg mx-auto mt-20">
+            <div class="glass p-8 rounded-3xl shadow-2xl border border-slate-100">
+                <h2 class="text-3xl font-bold mb-6">Complete Purchase</h2>
+                
+                <div class="space-y-6">
+                    <img id="checkout-img" class="w-full h-64 object-cover rounded-2xl shadow-md" src="">
+                    
+                    <div>
+                        <h3 id="checkout-title" class="text-2xl font-bold text-slate-800"></h3>
+                        <p class="text-sm text-slate-500">By <span id="checkout-artist"></span></p>
+                    </div>
+
+                    <div class="bg-indigo-50 p-6 rounded-2xl flex justify-between items-center">
+                        <span class="text-slate-600 font-medium">Total Price</span>
+                        <span id="checkout-price" class="text-3xl font-black text-indigo-700">₹0</span>
+                    </div>
+
+                    <button onclick="confirmPayment()" class="w-full bg-green-500 text-white p-5 rounded-2xl font-bold hover:bg-green-600 shadow-xl transition transform hover:scale-105">
+                        Pay Securely & Notify Artist
+                    </button>
+                    
+                    <button onclick="showSection('discover')" class="w-full text-slate-400 font-bold hover:text-slate-600 p-2">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <script>
         const API_BASE_URL = ""; 
         let TOKEN = localStorage.getItem('token');
         let CURRENT_ART_ID = null;
+        let CURRENT_CHECKOUT_ID = null;
         let SELECTED_IMAGE_FILE = null;
         let mediaRecorder, audioChunks = [], isRecording = false;
         let videoStream = null;
@@ -137,17 +200,63 @@
             if(section === 'gallery') fetchGallery();
         }
 
-        async function openCamera() { /* ... Camera logic (keep existing) ... */ }
-        function closeCamera() { /* ... Camera logic ... */ }
-        function takePhoto() { /* ... Camera logic ... */ }
-        function switchCamera() { alert("Not supported in demo"); }
-        function handleFileSelection(input) {
-             if (input.files && input.files[0]) {
-                SELECTED_IMAGE_FILE = input.files[0];
-                document.getElementById('preview-thumb').src = URL.createObjectURL(SELECTED_IMAGE_FILE);
+        async function openCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                const videoEl = document.getElementById('camera-feed');
+                videoEl.srcObject = videoStream;
+                document.getElementById('camera-modal').classList.remove('hidden');
+            } catch (err) {
+                alert("Cannot access camera. Ensure permissions are granted.");
+                console.error(err);
+            }
+        }
+
+        function closeCamera() {
+            document.getElementById('camera-modal').classList.add('hidden');
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+        }
+
+        function takePhoto() {
+            const video = document.getElementById('camera-feed');
+            const canvas = document.getElementById('camera-canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            canvas.toBlob(blob => {
+                SELECTED_IMAGE_FILE = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
+                const url = URL.createObjectURL(blob);
+                document.getElementById('preview-thumb').src = url;
                 document.getElementById('selection-status').classList.remove('hidden');
-                document.getElementById('btn-analyze').disabled = false;
-                document.getElementById('btn-analyze').classList.remove('opacity-50', 'cursor-not-allowed');
+                
+                const btn = document.getElementById('btn-analyze');
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                
+                closeCamera();
+            }, 'image/jpeg', 0.95);
+        }
+
+        function switchCamera() {
+            alert("Switching cameras not supported in this demo version.");
+        }
+
+        function handleFileSelection(input) {
+            if (input.files && input.files[0]) {
+                SELECTED_IMAGE_FILE = input.files[0];
+                const url = URL.createObjectURL(SELECTED_IMAGE_FILE);
+                document.getElementById('preview-thumb').src = url;
+                document.getElementById('selection-status').classList.remove('hidden');
+                
+                const btn = document.getElementById('btn-analyze');
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }
 
@@ -163,33 +272,44 @@
                 TOKEN = data.access_token;
                 localStorage.setItem('token', TOKEN);
                 if (data.full_name) localStorage.setItem('user_name', data.full_name);
+                
                 document.getElementById('nav-auth').classList.add('hidden');
                 document.getElementById('nav-user').classList.remove('hidden');
-                if (data.is_new_user) showSection('profile-setup'); else showSection('gallery');
+                if (data.is_new_user) showSection('profile-setup');
+                else showSection('gallery');
             }
         }
+
         async function sendOTP() {
             const phone = document.getElementById('phone').value;
             await fetch(`${API_BASE_URL}/auth/send-otp`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone_number: phone }) });
             document.getElementById('otp-step-1').classList.add('hidden');
             document.getElementById('otp-step-2').classList.remove('hidden');
         }
+
         async function saveProfile() {
             const name = document.getElementById('profile-name').value;
-            await fetch(`${API_BASE_URL}/user/profile`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}`}, body: JSON.stringify({ full_name: name, location: "Unknown" }) });
+            const loc = document.getElementById('profile-location').value;
+            await fetch(`${API_BASE_URL}/user/profile`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}`}, body: JSON.stringify({ full_name: name, location: loc }) });
             localStorage.setItem('user_name', name);
             showSection('gallery');
         }
 
         async function analyzeArt() {
             const voice = document.getElementById('user_voice').value;
+            if(!SELECTED_IMAGE_FILE) return alert("No image!");
+            
             const btn = document.getElementById('btn-analyze');
-            btn.disabled = true; btn.innerText = "Analyzing...";
+            btn.disabled = true; btn.innerText = "AI Processing...";
+            
             const formData = new FormData();
             formData.append('user_voice', voice);
             formData.append('file', SELECTED_IMAGE_FILE);
+
             try {
-                const res = await fetch(`${API_BASE_URL}/art/analyze-draft`, { method: 'POST', headers: {'Authorization': `Bearer ${TOKEN}`}, body: formData });
+                const res = await fetch(`${API_BASE_URL}/art/analyze-draft`, {
+                    method: 'POST', headers: {'Authorization': `Bearer ${TOKEN}`}, body: formData
+                });
                 const data = await res.json();
                 CURRENT_ART_ID = data.art_id;
                 document.getElementById('sharpened-preview').src = `data:image/jpeg;base64,${data.image_preview}`;
@@ -199,46 +319,164 @@
                 document.getElementById('rec-max').innerText = data.ai_suggestions.recommended_max;
                 document.getElementById('final_price').value = data.ai_suggestions.recommended_max;
                 document.getElementById('ai-preview-container').classList.remove('hidden');
-            } catch(e) { alert("Error"); } finally { btn.disabled = false; btn.innerText = "Run AI Appraisal"; }
+            } catch (e) { alert("Error"); } finally { btn.disabled = false; btn.innerText = "Run AI Appraisal"; }
         }
 
         async function publishArt() {
             const price = document.getElementById('final_price').value;
+            const btn = document.querySelector('button[onclick="publishArt()"]');
+            btn.innerText = "Publishing...";
+            
             await fetch(`${API_BASE_URL}/art/publish`, { method: 'POST', headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'}, body: JSON.stringify({ art_id: CURRENT_ART_ID, final_price: parseInt(price) }) });
-            alert("Published!"); showSection('gallery');
+            alert("Published!"); 
+            btn.innerText = "Confirm & Publish";
+            showSection('gallery');
         }
 
         async function fetchGallery() {
+            const name = localStorage.getItem('user_name') || "Artisan";
+            document.getElementById('artist-name-display').innerText = name;
+
             const res = await fetch(`${API_BASE_URL}/user/profile/artworks`, { headers: {'Authorization': `Bearer ${TOKEN}`} });
             const artworks = await res.json();
             const grid = document.getElementById('gallery-grid');
-            if (artworks.length === 0) { grid.innerHTML = `<p class="text-slate-400 col-span-3 text-center">Empty Gallery</p>`; return; }
             
-            grid.innerHTML = artworks.map(art => `
-                <div class="bg-white rounded-3xl overflow-hidden shadow-md border border-slate-100 relative group" id="card-${art.id}">
-                    <button onclick="deleteArt(${art.id})" class="absolute top-3 right-3 bg-white/90 text-red-500 p-2 rounded-full shadow-md hover:bg-red-50 transition z-10"><i class="fa-solid fa-trash"></i></button>
+            if (artworks.length === 0) {
+                grid.innerHTML = `<p class="text-slate-400 col-span-3 text-center">Empty Gallery. Start creating!</p>`; 
+                return;
+            }
+
+            grid.innerHTML = artworks.map(art => {
+                let displayStatus;
+                
+                if (art.is_published) {
+                    displayStatus = `<span class="text-indigo-600 font-black">₹${art.price}</span>`;
+                } else {
+                    displayStatus = `<span class="text-orange-500 font-bold bg-orange-50 px-2 py-1 rounded-md text-sm">Status: Drafted</span>`;
+                }
+
+                // Cards click to product page, but NO buy button here
+                return `
+                <div class="bg-white rounded-3xl overflow-hidden shadow-md border border-slate-100 relative group transition hover:shadow-xl cursor-pointer" onclick="window.location.href='/product/${art.id}'">
                     
-                    <a href="/ar/view/${art.id}" class="absolute top-3 left-3 bg-white/90 text-indigo-600 px-3 py-2 rounded-full shadow-md hover:bg-indigo-50 transition z-10 font-bold text-xs flex items-center gap-1 no-underline">
+                    <button onclick="event.stopPropagation(); deleteArt(${art.id})" class="absolute top-3 right-3 bg-white/90 text-red-500 p-2 rounded-full shadow-md hover:bg-red-50 transition z-10" title="Delete">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                    
+                    <a href="/ar/view/${art.id}" onclick="event.stopPropagation()" class="absolute top-3 left-3 bg-white/90 text-indigo-600 px-3 py-2 rounded-full shadow-md hover:bg-indigo-50 transition z-10 font-bold text-xs flex items-center gap-1 no-underline">
                         <i class="fa-solid fa-cube"></i> View in AR
                     </a>
 
                     <img src="data:image/jpeg;base64,${art.image_base64}" class="w-full h-48 object-cover">
                     <div class="p-5">
-                        <h3 class="font-bold text-lg">${art.app_title || 'Untitled'}</h3>
-                        <p class="text-indigo-600 font-black">₹${art.price}</p>
+                        <p class="text-xs font-bold text-indigo-500 uppercase">${art.art_form_tag || 'Art'}</p>
+                        <h3 class="font-bold text-lg leading-tight mb-2 truncate">${art.app_title || 'Untitled'}</h3>
+                        <div class="mt-2">${displayStatus}</div>
                     </div>
-                </div>`).join('');
+                </div>`
+            }).join('');
         }
 
         async function deleteArt(id) {
-            if(!confirm("Delete?")) return;
-            await fetch(`${API_BASE_URL}/art/${id}`, { method: 'DELETE', headers: {'Authorization': `Bearer ${TOKEN}`} });
-            document.getElementById(`card-${id}`).remove();
+            if (!confirm("Are you sure you want to permanently delete this artwork?")) return;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/art/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (res.ok) {
+                    showSection('gallery'); 
+                } else {
+                    alert("Failed to delete.");
+                }
+            } catch (e) {
+                alert("Network error.");
+            }
         }
 
-        // Keep Voice Recording & Search Logic (Standard)
-        async function toggleRecording() { /* ... */ }
-        async function searchArt() { /* ... */ }
+        async function toggleRecording() {
+            const btn = document.getElementById('btn-record');
+            const textBox = document.getElementById('user_voice');
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                    mediaRecorder.onstop = async () => {
+                        const blob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const formData = new FormData();
+                        formData.append('voice_file', blob, 'input.wav');
+                        const res = await fetch(`${API_BASE_URL}/utils/transcribe`, { method: 'POST', body: formData });
+                        const data = await res.json();
+                        textBox.value = textBox.value ? textBox.value + " " + data.transcript : data.transcript;
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.innerHTML = '<i class="fa-solid fa-stop"></i> Stop';
+                    btn.classList.add('recording-pulse', 'text-red-600');
+                } catch (err) { alert("Mic denied"); }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                btn.innerHTML = '<i class="fa-solid fa-microphone"></i> Record';
+                btn.classList.remove('recording-pulse', 'text-red-600');
+            }
+        }
+
+        async function searchArt() {
+            const q = document.getElementById('search-query').value;
+            const res = await fetch(`${API_BASE_URL}/buyer/recommendations?query=${q}`);
+            const data = await res.json();
+            document.getElementById('discover-grid').innerHTML = data.map(art => `
+                <div class="bg-white rounded-3xl overflow-hidden shadow-lg border-t-4 border-purple-500 p-4 cursor-pointer hover:shadow-xl transition" onclick="window.location.href='/product/${art.id}'">
+                    <img src="data:image/jpeg;base64,${art.image_base64}" class="w-full h-48 object-cover rounded-xl">
+                    <h3 class="font-bold text-lg mt-2">${art.title}</h3>
+                    <p class="text-purple-600 font-black">₹${art.price}</p>
+                    
+                    <button class="w-full mt-3 bg-purple-600 text-white py-2 rounded-xl font-bold hover:bg-purple-700 transition" onclick="event.stopPropagation(); goToCheckout(${art.id})">
+                        Buy Now
+                    </button>
+                </div>`).join('');
+        }
+
+        async function goToCheckout(id) {
+            CURRENT_CHECKOUT_ID = id;
+            const res = await fetch(`${API_BASE_URL}/art/details/${id}`, { headers: {'Authorization': `Bearer ${TOKEN}`} });
+            const art = await res.json();
+            
+            document.getElementById('checkout-img').src = `data:image/jpeg;base64,${art.image_base64}`;
+            document.getElementById('checkout-title').innerText = art.title;
+            document.getElementById('checkout-artist').innerText = art.artist_name;
+            document.getElementById('checkout-price').innerText = `₹${art.price}`;
+            
+            showSection('checkout');
+        }
+
+        async function confirmPayment() {
+            if(!confirm("Confirm Purchase?")) return;
+            
+            const btn = document.querySelector('button[onclick="confirmPayment()"]');
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+
+            const res = await fetch(`${API_BASE_URL}/payment/process`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}`},
+                body: JSON.stringify({ art_id: CURRENT_CHECKOUT_ID })
+            });
+            const data = await res.json();
+            
+            alert(data.message);
+            showSection('discover');
+            btn.innerText = "Pay Securely & Notify Artist";
+            btn.disabled = false;
+        }
 
         function logout() { localStorage.clear(); location.reload(); }
         if(TOKEN) {

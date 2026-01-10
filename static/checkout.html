@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | ArtConnect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-6">
+
+    <div class="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden">
+        <div class="relative h-48 bg-slate-200">
+            <img id="checkout-img" class="w-full h-full object-cover" src="">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+            <a href="javascript:history.back()" class="absolute top-4 left-4 text-white bg-black/30 p-2 rounded-full backdrop-blur-md"><i class="fa-solid fa-arrow-left"></i></a>
+        </div>
+
+        <div class="p-8">
+            <h1 class="text-2xl font-bold mb-1">Confirm Order</h1>
+            <p class="text-slate-500 text-sm mb-6">You are supporting <span id="checkout-artist" class="font-bold text-slate-800"></span></p>
+
+            <div class="flex justify-between items-center bg-indigo-50 p-4 rounded-xl mb-6">
+                <div>
+                    <p class="text-xs text-indigo-400 font-bold uppercase">Total to Pay</p>
+                    <p id="checkout-title" class="text-sm font-semibold truncate w-40"></p>
+                </div>
+                <p id="checkout-price" class="text-3xl font-black text-indigo-700">₹0</p>
+            </div>
+
+            <button onclick="processPayment()" id="pay-btn" class="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-600 transition shadow-lg flex justify-center items-center gap-2">
+                <span>Secure Pay</span> <i class="fa-solid fa-lock"></i>
+            </button>
+            <p class="text-center text-xs text-slate-400 mt-4"><i class="fa-solid fa-shield"></i> Payments powered by ArtConnect SafePay</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = "";
+        const TOKEN = localStorage.getItem('token');
+        const artId = window.location.pathname.split("/").pop();
+
+        if (!TOKEN) window.location.href = '/';
+
+        async function loadData() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/art/details/${artId}`, { headers: {'Authorization': `Bearer ${TOKEN}`} });
+                const art = await res.json();
+                
+                document.getElementById('checkout-img').src = `data:image/jpeg;base64,${art.image_base64}`;
+                document.getElementById('checkout-title').innerText = art.title;
+                document.getElementById('checkout-artist').innerText = art.artist_name;
+                document.getElementById('checkout-price').innerText = `₹${art.price}`;
+            } catch (e) {
+                alert("Error loading order");
+                window.location.href = '/';
+            }
+        }
+
+        async function processPayment() {
+            const btn = document.getElementById('pay-btn');
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/payment/process`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}`},
+                    body: JSON.stringify({ art_id: parseInt(artId) })
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    alert("Payment Successful! The artist has been notified.");
+                    window.location.href = '/'; // Go back to home
+                } else {
+                    alert("Payment failed.");
+                    btn.innerHTML = 'Try Again';
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                alert("Network error");
+                btn.innerHTML = 'Try Again';
+                btn.disabled = false;
+            }
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File, Form, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import Response, FileResponse, HTMLResponse  # <--- Added HTMLResponse
+from fastapi.responses import Response, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from twilio.rest import Client as TwilioClient
@@ -23,10 +23,9 @@ from PIL import Image, ImageEnhance
 import google.generativeai as genai
 from pinecone import Pinecone, ServerlessSpec 
 
-# Import database logic
 from database import init_db, get_db, UserTable, ArtformTable
 
-# --- 1. CONFIGURATION ---
+# --- CONFIGURATION ---
 load_dotenv()
 init_db()
 
@@ -41,13 +40,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- INSTAGRAM SETUP ---
+# --- INSTAGRAM & SECRETS ---
 IG_USER = os.getenv("IG_USERNAME")
 IG_PASS = os.getenv("IG_PASSWORD")
 cl = InstaClient()
 SESSION_FILE = "instagram_session.json"
 
-# --- SECRETS & KEYS ---
 SECRET_KEY = os.getenv("SECRET_KEY", "hackathon_secret")
 ALGORITHM = "HS256"
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -58,11 +56,9 @@ TWILIO_TOKEN = os.getenv("TWILIO_TOKEN")
 TWILIO_PHONE = os.getenv("TWILIO_PHONE")
 
 twilio_client = TwilioClient(TWILIO_SID, TWILIO_TOKEN)
-
-# In-Memory OTP Storage
 otp_storage = {} 
 
-# --- AI CLIENTS SETUP ---
+# --- AI CLIENTS ---
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"temperature": 0.2})
 
@@ -78,9 +74,7 @@ if INDEX_NAME not in [i.name for i in pc.list_indexes()]:
     )
 pinecone_index = pc.Index(INDEX_NAME)
 
-
-# --- HELPER FUNCTIONS ---
-
+# --- HELPERS ---
 def login_to_instagram():
     if os.path.exists(SESSION_FILE):
         try:
@@ -180,46 +174,42 @@ class PublishRequest(BaseModel):
     art_id: int
     final_price: int
 
-# --- ENDPOINTS ---
+class PaymentRequest(BaseModel):
+    art_id: int
+
+# --- STATIC & PAGES ---
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 def read_root():
     return FileResponse('static/index.html')
 
-# --- NEW AR ENDPOINT ---
+# NEW: Product Page Route
+@app.get("/product/{art_id}")
+def serve_product_page(art_id: int):
+    return FileResponse('static/product.html')
+
+# NEW: Checkout Page Route
+@app.get("/checkout/{art_id}")
+def serve_checkout_page(art_id: int):
+    return FileResponse('static/checkout.html')
+
+# --- AR VIEW ---
 @app.get("/ar/view/{art_id}", response_class=HTMLResponse)
 def view_in_ar(art_id: int, db: Session = Depends(get_db)):
-    """
-    Generates the AR view for a specific artwork.
-    """
-    # 1. Fetch artwork
     art = db.query(ArtformTable).filter(ArtformTable.id == art_id).first()
-    if not art:
-        raise HTTPException(status_code=404, detail="Artwork not found")
-    
-    # 2. Get Image Data
-    if not art.image_data:
-        raise HTTPException(status_code=404, detail="Image data missing")
-        
+    if not art or not art.image_data: raise HTTPException(404, "Art not found")
     image_b64 = base64.b64encode(art.image_data).decode('utf-8')
     image_src = f"data:image/jpeg;base64,{image_b64}"
-    
-    # 3. Inject into Template
     try:
-        with open("static/ar_view.html", "r", encoding="utf-8") as f:
-            html_content = f.read()
-    except FileNotFoundError:
-        return HTMLResponse("<h1>Error: static/ar_view.html not found</h1>", status_code=500)
-    
-    html_content = html_content.replace("{{IMAGE_SOURCE}}", image_src)
-    
-    return HTMLResponse(content=html_content)
+        with open("static/ar_view.html", "r", encoding="utf-8") as f: html = f.read()
+        return HTMLResponse(content=html.replace("{{IMAGE_SOURCE}}", image_src))
+    except: return HTMLResponse("<h1>Error loading AR template</h1>", 500)
 
+# --- UTILS ---
 @app.post("/utils/transcribe")
 async def transcribe_audio(voice_file: UploadFile = File(...)):
     audio_bytes = await voice_file.read()
-    if not audio_bytes: raise HTTPException(400, "Empty audio")
     transcript = process_sarvam_audio(audio_bytes, voice_file.filename)
     if not transcript: raise HTTPException(500, "Transcription failed")
     return {"transcript": transcript}
@@ -231,22 +221,14 @@ def send_otp(request: LoginRequest):
     otp_storage[request.phone_number] = otp
     print(f"🔐 DEBUG OTP: {otp}") 
     try:
-        twilio_client.messages.create(
-            body=f"Your ArtConnect Login Code: {otp}",
-            from_=TWILIO_PHONE,
-            to=request.phone_number
-        )
-        print("✅ Twilio SMS sent successfully")
-    except Exception as e:
-        print(f"❌ Twilio Failed: {str(e)}")
-    return {"message": "OTP Sent (Check Terminal if SMS failed)"}
+        twilio_client.messages.create(body=f"Your ArtConnect Login Code: {otp}", from_=TWILIO_PHONE, to=request.phone_number)
+    except: pass
+    return {"message": "OTP Sent"}
 
 @app.post("/auth/verify-otp")
 def verify_otp(request: VerifyRequest, db: Session = Depends(get_db)):
-    if otp_storage.get(request.phone_number) != request.otp:
-        raise HTTPException(400, "Invalid OTP")
+    if otp_storage.get(request.phone_number) != request.otp: raise HTTPException(400, "Invalid OTP")
     del otp_storage[request.phone_number]
-    
     user = db.query(UserTable).filter(UserTable.phone == request.phone_number).first()
     is_new = False
     if not user:
@@ -255,12 +237,7 @@ def verify_otp(request: VerifyRequest, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
     elif user.is_new: is_new = True
-    
-    return {
-        "access_token": create_access_token({"sub": user.phone}), 
-        "is_new_user": is_new,
-        "full_name": user.full_name
-    }
+    return {"access_token": create_access_token({"sub": user.phone}), "is_new_user": is_new, "full_name": user.full_name}
 
 @app.post("/user/profile")
 async def update_profile(data: ProfileUpdate, user: UserTable = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -272,127 +249,49 @@ async def update_profile(data: ProfileUpdate, user: UserTable = Depends(get_curr
     return {"message": "Saved"}
 
 # --- ART OPERATIONS ---
-
 @app.post("/art/analyze-draft")
-async def analyze_art_draft(
-    user_voice: str = Form(...),
-    file: UploadFile = File(...),     
-    current_user: UserTable = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+async def analyze_art_draft(user_voice: str = Form(...), file: UploadFile = File(...), current_user: UserTable = Depends(get_current_user), db: Session = Depends(get_db)):
     original_bytes = await file.read()
     processed_bytes = enhance_image_quality(original_bytes)
     base64_img = base64.b64encode(processed_bytes).decode('utf-8')
-
-    prompt = f"""
-Role: You are a strict, conservative Art Appraiser and a Professional Social Media Editor. 
-Task: Analyze the uploaded image and the user's description: '{user_voice}'.
-
---- PART 1: VALUATION RULES ---
-1. CLASSIFY: Determine the 'Artist Level' based strictly on visual technical skill:
-   - Beginner/Hobbyist: Simple techniques, standard materials. (Price Tier: Low)
-   - Emerging Artist: Consistent style, good composition. (Price Tier: Medium)
-   - Professional: Gallery-quality, exceptional technique. (Price Tier: High)
-
-2. PRICE: Estimate a realistic sellable price in INDIAN RUPEES (₹).
-   - Compare with unverified artwork on Etsy/ArtStation.
-   - DO NOT assume the artist is famous. Be conservative.
-   - The gap between Min and Max price must NOT exceed 30% of the Min price.
-
---- PART 2: CONTENT GENERATION RULES ---
-1. ART TAG: Be precise and descriptive (e.g., "Oil on Canvas", "Digital Vector Art"). Avoid abstract terms.
-2. APP TITLE: Write one emotional, captivating sentence about the art.
-3. INSTAGRAM CAPTION: Create a catchy, trendy caption with hashtags.
-
---- PART 3: VOICE CORRECTION RULES ---
-Refine the user's description ('{user_voice}') for the 'corrected_voice' field:
-   - Preserve Core Meaning: Do not change the artist's intent.
-   - Fix Grammar: Correct errors and awkward phrasing.
-   - Polish Tone: Make it professional but authentic.
-   - Maintain Voice: If they sound humble, keep it humble. If excited, keep it excited. DO NOT use corporate marketing speak.
-
---- OUTPUT FORMAT ---
-Return ONLY a valid JSON object with this exact structure:
-{{
-  "price_min": 1000,
-  "price_max": 1300,
-  "currency": "INR",
-  "reasoning": "Brief explanation of valuation based on skill level.",
-  "instagram_caption": "Your caption here...",
-  "art_tag": "Precise Art Form",
-  "app_title": "Emotional sentence about the art...",
-  "corrected_voice": "The refined version of the user's text..."
-}}
-"""
+    prompt = f"""Role: Art Appraiser. Task: Analyze image & desc: '{user_voice}'.
+    OUTPUT JSON: {{ "price_min": 1000, "price_max": 1300, "currency": "INR", "reasoning": "...", "instagram_caption": "...", "art_tag": "...", "app_title": "...", "corrected_voice": "..." }}"""
     try:
         res = model.generate_content([prompt, {'mime_type': 'image/jpeg', 'data': original_bytes}])
         analysis = json.loads(res.text.replace("```json", "").replace("```", "").strip())
     except Exception as e: raise HTTPException(500, f"AI Error: {e}")
-
     new_art = ArtformTable(
-        title=analysis['app_title'], 
-        price=0, 
-        description=user_voice,
-        image_data=processed_bytes, 
-        owner_phone=current_user.phone,
-        art_form_tag=analysis['art_tag'], 
-        app_title=analysis['app_title'],
-        corrected_voice=analysis['corrected_voice'], 
-        min_price=analysis['price_min'], 
-        max_price=analysis['price_max'], 
-        is_published=False 
+        title=analysis['app_title'], price=0, description=user_voice, image_data=processed_bytes,
+        owner_phone=current_user.phone, art_form_tag=analysis['art_tag'], app_title=analysis['app_title'],
+        corrected_voice=analysis['corrected_voice'], min_price=analysis['price_min'], max_price=analysis['price_max'], is_published=False 
     )
     db.add(new_art)
     db.commit()
-    
-    return {
-        "status": "draft_created", "art_id": new_art.id,
-        "ai_suggestions": {
-            "recommended_min": analysis['price_min'], 
-            "recommended_max": analysis['price_max'],
-            "title": analysis['app_title'],
-            "voice": analysis['corrected_voice']
-        },
-        "image_preview": base64_img
-    }
+    return {"status": "draft_created", "art_id": new_art.id, "ai_suggestions": {"recommended_min": analysis['price_min'], "recommended_max": analysis['price_max'], "title": analysis['app_title'], "voice": analysis['corrected_voice']}, "image_preview": base64_img}
 
 @app.post("/art/publish")
-async def publish_art(
-    request: PublishRequest, background_tasks: BackgroundTasks, 
-    current_user: UserTable = Depends(get_current_user), db: Session = Depends(get_db)
-):
+async def publish_art(request: PublishRequest, background_tasks: BackgroundTasks, current_user: UserTable = Depends(get_current_user), db: Session = Depends(get_db)):
     art = db.query(ArtformTable).filter(ArtformTable.id == request.art_id).first()
     if not art: raise HTTPException(404)
     art.price = request.final_price
     art.is_published = True
     db.commit()
-
     vector_text = f"{art.art_form_tag} {art.app_title} {art.corrected_voice}"
-    pinecone_index.upsert(vectors=[{
-        "id": str(art.id),
-        "values": get_embedding(vector_text),
-        "metadata": {"tag": art.art_form_tag, "price": request.final_price, "artist": current_user.full_name}
-    }])
-
+    pinecone_index.upsert(vectors=[{"id": str(art.id), "values": get_embedding(vector_text), "metadata": {"tag": art.art_form_tag, "price": request.final_price, "artist": current_user.full_name}}])
     caption = f"{art.app_title}\n\n🎨 {current_user.full_name}\n💰 ₹{art.price}\n\n{art.corrected_voice}\n#ArtConnect"
     background_tasks.add_task(upload_to_instagram_task, art.image_data, caption)
-
     return {"status": "published"}
 
 @app.delete("/art/{art_id}")
 def delete_art(art_id: int, current_user: UserTable = Depends(get_current_user), db: Session = Depends(get_db)):
     art = db.query(ArtformTable).filter(ArtformTable.id == art_id).first()
-    if not art: raise HTTPException(404, "Artwork not found")
-    if art.owner_phone != current_user.phone: raise HTTPException(403, "Not authorized to delete this art")
-
-    try:
-        pinecone_index.delete(ids=[str(art_id)])
-    except Exception as e:
-        print(f"Pinecone delete error: {e}")
-
+    if not art: raise HTTPException(404)
+    if art.owner_phone != current_user.phone: raise HTTPException(403)
+    try: pinecone_index.delete(ids=[str(art_id)])
+    except: pass
     db.delete(art)
     db.commit()
-    return {"status": "deleted", "message": "Artwork removed from database and search index"}
+    return {"status": "deleted"}
 
 @app.get("/user/profile/artworks", response_model=List[ArtworkProfileResponse])
 def get_my_artworks(current_user: UserTable = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -400,13 +299,7 @@ def get_my_artworks(current_user: UserTable = Depends(get_current_user), db: Ses
     res = []
     for art in artworks:
         img = base64.b64encode(art.image_data).decode('utf-8') if art.image_data else None
-        res.append(ArtworkProfileResponse(
-            id=art.id, title=art.title, price=art.price, description=art.description,
-            art_form_tag=art.art_form_tag, app_title=art.app_title, corrected_voice=art.corrected_voice,
-            min_price=art.min_price, 
-            max_price=art.max_price, 
-            is_published=art.is_published, image_base64=img
-        ))
+        res.append(ArtworkProfileResponse(id=art.id, title=art.title, price=art.price, description=art.description, art_form_tag=art.art_form_tag, app_title=art.app_title, corrected_voice=art.corrected_voice, min_price=art.min_price, max_price=art.max_price, is_published=art.is_published, image_base64=img))
     return res
 
 @app.get("/buyer/recommendations")
@@ -417,8 +310,44 @@ def get_recommendations(query: str, db: Session = Depends(get_db)):
         art = db.query(ArtformTable).filter(ArtformTable.id == int(m['id']), ArtformTable.is_published == True).first()
         if art:
             img = base64.b64encode(art.image_data).decode('utf-8') if art.image_data else None
-            out.append({
-                "id": art.id, "title": art.app_title, "artist": m['metadata'].get('artist'),
-                "price": art.price, "tag": art.art_form_tag, "image_base64": img
-            })
+            out.append({"id": art.id, "title": art.app_title, "artist": m['metadata'].get('artist'), "price": art.price, "tag": art.art_form_tag, "image_base64": img})
     return out
+
+# --- UPDATED: GET DETAILS & PAYMENT ---
+@app.get("/art/details/{art_id}")
+def get_art_details(art_id: int, db: Session = Depends(get_db)):
+    art = db.query(ArtformTable).filter(ArtformTable.id == art_id).first()
+    if not art: raise HTTPException(404, "Art not found")
+    img = base64.b64encode(art.image_data).decode('utf-8') if art.image_data else None
+    artist = db.query(UserTable).filter(UserTable.phone == art.owner_phone).first()
+    artist_name = artist.full_name if artist else "Unknown Artisan"
+    return {
+        "id": art.id,
+        "title": art.app_title,
+        "price": art.price,
+        "artist_name": artist_name,
+        "description": art.description,
+        "tag": art.art_form_tag,
+        "story": art.corrected_voice,
+        "is_published": art.is_published,
+        "image_base64": img
+    }
+
+@app.post("/payment/process")
+async def process_payment(req: PaymentRequest, current_user: UserTable = Depends(get_current_user), db: Session = Depends(get_db)):
+    art = db.query(ArtformTable).filter(ArtformTable.id == req.art_id).first()
+    if not art: raise HTTPException(404, "Art not found")
+    
+    # 1. Notify Artist
+    try:
+        msg_body = f"🎉 Your art '{art.app_title}' was SOLD for ₹{art.price} to {current_user.full_name}!"
+        twilio_client.messages.create(body=msg_body, from_=TWILIO_PHONE, to=art.owner_phone)
+    except Exception as e: print(f"SMS Failed: {e}")
+
+    # 2. Clean Up
+    try: pinecone_index.delete(ids=[str(art.id)])
+    except: pass
+    
+    db.delete(art)
+    db.commit()
+    return {"status": "success", "message": "Payment successful! Artwork has been sold."}

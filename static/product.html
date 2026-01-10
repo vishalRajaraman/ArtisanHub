@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artwork Details | ArtConnect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>.glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }</style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900">
+    <nav class="p-6">
+        <a href="/" class="text-indigo-600 font-bold flex items-center gap-2"><i class="fa-solid fa-arrow-left"></i> Back to Gallery</a>
+    </nav>
+
+    <main class="max-w-5xl mx-auto p-6 grid md:grid-cols-2 gap-10">
+        <div class="relative">
+            <img id="art-img" class="w-full h-[500px] object-cover rounded-3xl shadow-xl bg-slate-200" src="">
+            <a id="ar-btn" href="#" class="absolute top-4 right-4 bg-white/90 text-indigo-600 px-4 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 hover:scale-105 transition">
+                <i class="fa-solid fa-cube"></i> View in AR
+            </a>
+        </div>
+
+        <div class="space-y-6">
+            <div>
+                <span id="art-tag" class="text-xs font-bold text-indigo-500 uppercase tracking-wide border border-indigo-100 px-2 py-1 rounded"></span>
+                <h1 id="art-title" class="text-4xl font-black mt-3 leading-tight">Loading...</h1>
+                <p class="text-lg text-slate-500 mt-1">by <span id="art-artist" class="text-slate-800 font-semibold">...</span></p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                <h3 class="font-bold text-slate-400 text-xs uppercase mb-2">Artisan's Story</h3>
+                <p id="art-story" class="text-slate-700 italic leading-relaxed">...</p>
+            </div>
+
+            <div class="flex items-center justify-between pt-4">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase">Price</p>
+                    <p id="art-price" class="text-4xl font-black text-indigo-600">₹0</p>
+                </div>
+                <a id="buy-btn" href="#" class="bg-black text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-slate-800 transition shadow-lg flex items-center gap-2">
+                    Buy Now <i class="fa-solid fa-bag-shopping"></i>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE_URL = "";
+        const TOKEN = localStorage.getItem('token');
+        const artId = window.location.pathname.split("/").pop(); // Get ID from URL
+
+        if (!TOKEN) window.location.href = '/';
+
+        async function loadDetails() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/art/details/${artId}`, { headers: {'Authorization': `Bearer ${TOKEN}`} });
+                if (!res.ok) throw new Error("Art not found");
+                const art = await res.json();
+
+                document.title = `${art.title} | ArtConnect`;
+                document.getElementById('art-img').src = `data:image/jpeg;base64,${art.image_base64}`;
+                document.getElementById('art-tag').innerText = art.tag || 'Art';
+                document.getElementById('art-title').innerText = art.title;
+                document.getElementById('art-artist').innerText = art.artist_name;
+                document.getElementById('art-story').innerText = art.story || art.description;
+                document.getElementById('art-price').innerText = `₹${art.price}`;
+                
+                // Links
+                document.getElementById('ar-btn').href = `/ar/view/${art.id}`;
+                document.getElementById('buy-btn').href = `/checkout/${art.id}`;
+
+            } catch (e) {
+                alert("Failed to load details");
+                window.location.href = '/';
+            }
+        }
+        loadDetails();
+    </script>
+</body>
+</html>
